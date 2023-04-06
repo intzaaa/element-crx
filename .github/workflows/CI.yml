@@ -5,9 +5,35 @@ on:
   push:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0,12 * * *"
 jobs:
-  Pack:
+  check:
+    name: Check
+    runs-on: ubuntu-latest-4-cores
+    steps:
+      - id: check1
+        uses: robinraju/release-downloader@v1.7
+        with:
+          repository: "vector-im/element-web"
+          latest: true
+          fileName: "*src.tar.gz.asc"
+      - id: check2
+        uses: robinraju/release-downloader@v1.7
+        with:
+          latest: true
+      - id: check
+        env:
+          check1: ${{ steps.check1.outputs.tag_name }}
+        run: |
+          echo "${element_tag=check1#*v}" > $GITHUB_OUTPUT
+          echo "${crx_tag=check1#*v}" > $GITHUB_OUTPUT
+    outputs:
+      latest-element-tag: ${{ steps.check.outputs.element_tag }}
+      latest-crx-tag: ${{ steps.check.outputs.crx_tag }}
+  pack:
+    name: Pack Crx
+    needs: check
+    if: ${{ needs.check.outputs.latest-element-tag }} > ${{ needs.check.outputs.latest-crx-tag }}
     runs-on: ubuntu-latest
     steps:
       #- name: Setup Node.js
@@ -35,27 +61,46 @@ jobs:
       - name: Unpack element-web
         run: |
           mkdir temp
-          tar xvzf element-${{steps.dew.outputs.tag_name}}.tar.gz -C temp
-          rm temp/element-${{steps.dew.outputs.tag_name}}/manifest.json
+          tar xvzf element-${{ steps.dew.outputs.tag_name }}.tar.gz -C temp
+          rm temp/element-${{ steps.dew.outputs.tag_name }}/manifest.json
       - name: Merge
         run: |
           mv crx/* build
           mv temp/element-${{steps.dew.outputs.tag_name}}/* build
       - name: Tree
         run: tree -a -C
-      - name: Build crx
+      - name: Build Crx
         env:
           pem: ${{ secrets.pem }}
         run: |
           chrome --version
-          export numversion=${{steps.dew.outputs.tag_name}}
+          export numversion=${{ steps.dew.outputs.tag_name }}
           sed -i "s/--version/${numversion#*v}/g" build/manifest.json
           cat build/manifest.json
           echo "$pem" > cert.pem
           curl -O --output-dir build "https://app.element.io/config.json"
           chrome --pack-extension=build --pack-extension-key=cert.pem
-          mv build.crx element-${{steps.dew.outputs.tag_name}}.crx
+          mv build.crx element-${{ steps.dew.outputs.tag_name }}.crx
       - uses: actions/upload-artifact@v3
         with:
           name: crx
           path: "*.crx"
+    outputs:
+      tag: ${{steps.dew.outputs.tag_name}}
+  publish:
+    name: Publish
+    needs: [check, pack]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: crx
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: ${{ needs.pack.outputs.tag }}
+          prerelease: false
+          title: ${{ needs.pack.outputs.tag }}
+          files: |
+            *.crx
+            *.zip
