@@ -49,7 +49,7 @@ jobs:
           numversion: ${{ steps.dew.outputs.tag_name }}
         run: |
           chrome --version
-          export numversion=${numversion'#'*v}
+          export numversion=${numversion#*v}
           sed -i 's/--version/$numversion/g' build/manifest.json
           cat build/manifest.json
           echo "$pem" > cert.pem
