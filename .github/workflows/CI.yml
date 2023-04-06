@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          path: ""
+          path: "crx"
       - name: Download element-web
         id: dew
         uses: robinraju/release-downloader@v1.7
