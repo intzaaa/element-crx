@@ -46,10 +46,12 @@ jobs:
       - name: Build crx
         env:
           pem: ${{ secrets.pem }}
-          version: ${{steps.dew.outputs.tag_name}}
+          numversion: ${{ steps.dew.outputs.tag_name }}
         run: |
           chrome --version
-          sed -i 's/$$$version/${ version#*v }/g' build/manifest.json
+          export numversion=${numversion'#'*v}
+          sed -i 's/--version/$numversion/g' build/manifest.json
+          cat build/manifest.json
           echo "$pem" > cert.pem
           curl -O --output-dir build "https://app.element.io/config.json"
           chrome --pack-extension=build --pack-extension-key=cert.pem
