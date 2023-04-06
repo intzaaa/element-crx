@@ -36,13 +36,11 @@ jobs:
         run: |
           mkdir temp
           tar xvzf element-${{steps.dew.outputs.tag_name}}.tar.gz -C temp
-          cd temp && mkdir temp
-          tar xvf element-${{steps.dew.outputs.tag_name}}.tar -C temp
-          rm temp/manifest.json
+          rm temp/element-${{steps.dew.outputs.tag_name}}/manifest.json
       - name: Merge
         run: |
           mv crx/* build
-          mv temp/temp/element-${{steps.dew.outputs.tag_name}}/* build
+          mv temp/element-${{steps.dew.outputs.tag_name}}/* build
       - name: Tree
         run: tree -a -C
       - name: Build crx
