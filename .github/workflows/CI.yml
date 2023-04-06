@@ -10,10 +10,10 @@ jobs:
   Pack:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
+      #- name: Setup Node.js
+      #  uses: actions/setup-node@v3
+      #  with:
+      #    node-version: 16
       - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1.2.0
       - name: Prepare
@@ -49,6 +49,7 @@ jobs:
         run: |
           chrome --version
           echo "$pem" > cert.pem
+          curl -O --output-dir build "https://app.element.io/config.json"
           chrome --pack-extension=build --pack-extension-key=cert.pem
           mv build.crx element-${{steps.dew.outputs.tag_name}}.crx
       - uses: actions/upload-artifact@v3
