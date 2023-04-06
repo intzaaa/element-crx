@@ -1,0 +1,59 @@
+# @format
+
+name: CI
+on:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+jobs:
+  Pack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+      - name: Setup Chrome
+        uses: browser-actions/setup-chrome@v1.2.0
+      - name: Prepare
+        run: |
+          mkdir build
+          mkdir crx
+          tree -a -C
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: ""
+      - name: Download element-web
+        id: dew
+        uses: robinraju/release-downloader@v1.7
+        with:
+          repository: "vector-im/element-web"
+          latest: true
+          fileName: "element-*.tar.gz"
+      - name: Unpack element-web
+        run: |
+          mkdir temp
+          tar xvzf element-${{steps.dew.outputs.tag_name}}.tar.gz -C temp
+          cd temp && mkdir temp
+          tar xvf element-${{steps.dew.outputs.tag_name}}.tar -C temp
+          rm temp/manifest.json
+      - name: Merge
+        run: |
+          mv crx/* build
+          mv temp/temp/element-${{steps.dew.outputs.tag_name}}/* build
+      - name: Tree
+        run: tree -a -C
+      - name: Build crx
+        env:
+          pem: ${{ secrets.pem }}
+        run: |
+          chrome --version
+          echo "$pem" > cert.pem
+          chrome --pack-extension=build --pack-extension-key=cert.pem
+          mv build.crx element-${{steps.dew.outputs.tag_name}}.crx
+      - uses: actions/upload-artifact@v3
+        with:
+          name: crx
+          path: "*.crx"
