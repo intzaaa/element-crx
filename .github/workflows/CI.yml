@@ -36,7 +36,7 @@ jobs:
   pack:
     name: Pack Crx
     needs: check
-    if: needs.check.outputs.latest-element-tag > needs.check.outputs.latest-crx-tag
+    if: ${{ ${{ needs.check.outputs.latest-element-tag }} > ${{ needs.check.outputs.latest-crx-tag }} }}
     runs-on: ubuntu-latest
     steps:
       #- name: Setup Node.js
