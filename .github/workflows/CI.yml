@@ -26,10 +26,8 @@ jobs:
           check1: ${{ steps.check1.outputs.tag_name }}
           check2: ${{ steps.check2.outputs.tag_name }}
         run: |
-          echo "element_tag=${check1#*v}" > $element_tag1
-          echo "element_tag=${element_tag1//.}" > $GITHUB_OUTPUT
-          echo "crx_tag=${check2#*v//./}" > $crx_tag1
-          echo "crx_tag=${crx_tag1//.}"  > $GITHUB_OUTPUT
+          echo element_tag=$(echo $check1 | tr -d 'v.') > $GITHUB_OUTPUT
+          echo crx_tag=$(echo $check2 | tr -d 'v.') > $GITHUB_OUTPUT
     outputs:
       latest-element-tag: ${{ steps.check.outputs.element_tag }}
       latest-crx-tag: ${{ steps.check.outputs.crx_tag }}
